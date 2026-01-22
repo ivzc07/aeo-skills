@@ -19,7 +19,7 @@ AEO is a set of Vercel Skills that enables Claude Code to execute development ta
 ```bash
 # Prerequisites: PAI and Ralph must be installed first
 npx skills add snarktank/ralph
-npx skills add laurence/aeo-skills
+npx skills add ivzc07/aeo-skills
 ```
 
 ## Quick Start
