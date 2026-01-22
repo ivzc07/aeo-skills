@@ -1,0 +1,98 @@
+# .github/workflows/skill-validation.yml
+name: Skill Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    name: Validate Skills
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check skill structure
+        run: |
+          # Check all required skills exist
+          required_skills=(
+            "skills/aeo-core/SKILL.md"
+            "skills/aeo-spec-validator/SKILL.md"
+            "skills/aeo-qa-agent/SKILL.md"
+            "skills/aeo-failure-patterns/SKILL.md"
+            "skills/aeo-escalation/SKILL.md"
+            "skills/aeo-cost-governor/SKILL.md"
+            "skills/aeo-architecture/SKILL.md"
+          )
+
+          for skill in "${required_skills[@]}"; do
+            if [ ! -f "$skill" ]; then
+              echo "❌ Missing: $skill"
+              exit 1
+            fi
+            echo "✅ Found: $skill"
+          done
+
+      - name: Validate skill format
+        run: |
+          # Each SKILL.md must have required sections
+          for skill in skills/*/SKILL.md; do
+            echo "Validating $skill..."
+
+            # Check for name
+            if ! grep -q "^name:" "$skill"; then
+              echo "❌ Missing 'name:' in $skill"
+              exit 1
+            fi
+
+            # Check for description
+            if ! grep -q "^description:" "$skill"; then
+              echo "❌ Missing 'description:' in $skill"
+              exit 1
+            fi
+
+            echo "✅ $skill is valid"
+          done
+
+      - name: Check documentation
+        run: |
+          # Check required docs exist
+          required_docs=("README.md" "AGENTS.md" "CLAUDE.md")
+
+          for doc in "${required_docs[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "❌ Missing: $doc"
+              exit 1
+            fi
+            echo "✅ Found: $doc"
+          done
+
+      - name: Verify skill references
+        run: |
+          # Skills should reference each other correctly
+          echo "Checking skill references..."
+          grep -r "aeo-spec-validator" skills/aeo-core/SKILL.md && echo "✅ aeo-core references spec-validator"
+          grep -r "aeo-qa-agent" skills/aeo-core/SKILL.md && echo "✅ aeo-core references qa-agent"
+          grep -r "aeo-escalation" skills/aeo-core/SKILL.md && echo "✅ aeo-core references escalation"
+
+      - name: Check PAI integration
+        run: |
+          # Skills should reference PAI memory paths
+          echo "Checking PAI memory references..."
+          grep -r "\$PAI_DIR/MEMORY/" skills/*/SKILL.md && echo "✅ PAI memory references found"
+
+      - name: Validate markdown syntax
+        run: |
+          # Ensure markdown files are well-formed
+          find . -name "*.md" -type f | while read file; do
+            # Check for obvious markdown issues
+            if grep -P '\t' "$file"; then
+              echo "❌ $file contains tabs (use spaces)"
+              exit 1
+            fi
+          done
+          echo "✅ Markdown syntax valid"
